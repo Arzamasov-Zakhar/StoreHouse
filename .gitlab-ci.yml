@@ -1,0 +1,109 @@
+stages:
+  - build
+  - test
+  - analyze
+
+### App building ###
+build image:
+  stage: build
+  image: gcr.io/kaniko-project/executor:v1.3.0-debug
+  script:
+    - echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$DOCKER_HUB_AUTH\"},\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"},\"git.webpp.ru\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --cache=true --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE:$CI_PIPELINE_ID
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_REF_NAME =~ /^release.*$/
+    - if: $CI_COMMIT_REF_NAME =~ /^hotfix.*$/
+    - if: $CI_COMMIT_REF_NAME == "master"
+    - if: $CI_COMMIT_REF_NAME == "feature/TECH-507"
+
+build bd image:
+  stage: build
+  image: gcr.io/kaniko-project/executor:debug
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --cache=true --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile-bd --destination $CI_REGISTRY_IMAGE:$CI_PIPELINE_ID-bd
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_REF_NAME =~ /^release.*$/
+    - if: $CI_COMMIT_REF_NAME =~ /^hotfix.*$/
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_REF_NAME == "feature/TECH-507"
+
+#### Quality assurance ###
+codestyle:
+  stage: test
+  image: $CI_REGISTRY_IMAGE:$CI_PIPELINE_ID
+  needs:
+    - build image
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_REF_NAME =~ /^release.*$/
+    - if: $CI_COMMIT_REF_NAME =~ /^hotfix.*$/
+  script:
+    - make check
+
+tests:
+  stage: test
+  image: $CI_REGISTRY_IMAGE:$CI_PIPELINE_ID
+  services:
+    - name: $CI_REGISTRY_IMAGE:$CI_PIPELINE_ID-bd
+      alias: postgres
+    - rabbitmq:3-alpine
+  variables:
+    DB_HOST: "0.0.0.0"
+    DB_PASS: "project"
+    DB_NAME: "project"
+    DB_USER: "postgres"
+    DB_PORT: "5432"
+    POSTGRES_USER: "postgres"
+    POSTGRES_PASSWORD: "src"
+    POSTGRES_DB: "src"
+    POSTGRES_HOST: "0.0.0.0"
+    WRITE_DB: "postgresql://postgres:src@postgres/src"
+    RABBIT_USERNAME: "user"
+    RABBIT_PASSWORD: "password"
+    RABBIT_HOST: "0.0.0.0"
+    RABBIT_PORT: "5672"
+    RABBIT_VHOST: ""
+    RABBITMQ_DEFAULT_USER: "user"
+    RABBITMQ_DEFAULT_PASS: "password"
+  needs:
+    - build image
+    - build bd image
+  script:
+    - bash ./wait-for-it.sh $DB_HOST:5432 -t 120
+    - bash ./wait-for-it.sh $RABBIT_HOST:$RABBIT_PORT -t 60
+    - make tests
+    - coverage report -m
+  artifacts:
+    paths:
+      - coverage.xml
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_REF_NAME =~ /^release.*$/
+    - if: $CI_COMMIT_REF_NAME =~ /^hotfix.*$/
+
+sonar:
+  stage: analyze
+  allow_failure: true # TODO поменять на false когда создастся проект в sonar
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+    GIT_DEPTH: "0"
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  dependencies:
+    - tests
+  needs:
+    - tests
+  script:
+    - sonar-scanner
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "develop"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"

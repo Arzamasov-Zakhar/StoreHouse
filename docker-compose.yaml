@@ -1,0 +1,51 @@
+version: "3"
+
+services:
+  postgres:
+    build:
+      dockerfile: Dockerfile-bd
+      context: .
+    environment:
+      POSTGRES_PASSWORD: project
+      POSTGRES_DB: project
+    ports:
+      - 15432:5432
+    networks:
+      - project
+
+  project-back: &backend
+    build:
+      dockerfile: Dockerfile
+      context: .
+    env_file:
+      - .env
+    volumes:
+      - ./:/srv/app
+      - ./entrypoint.sh:/usr/local/bin/app
+      - ./config.yaml:/etc/app/config.yaml
+      - ./alembic.ini:/etc/app/alembic.ini
+    depends_on:
+      - postgres
+      - rabbit
+    ports:
+      - 8080:8080
+    links:
+      - postgres
+    networks:
+      - project
+
+  rabbit:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    networks:
+      - project
+
+networks:
+  project:
+    external:
+      name: src-net

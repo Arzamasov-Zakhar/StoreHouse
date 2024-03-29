@@ -1,0 +1,101 @@
+[tool.poetry]
+name = "fastapi-template"
+version = "0.1.0"
+description = ""
+authors = ["Webpp Studio <tech@webpp.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.103.1"
+pydantic = "^2.3.0"
+psycopg2-binary = "^2.9.7"
+loguru = "^0.7.1"
+uvicorn = "^0.23.2"
+argon2-cffi = "^23.1.0"
+alembic = "^1.12.0"
+gunicorn = "^21.2.0"
+itsdangerous = "^2.1.2"
+asyncpg = "^0.28.0"
+pydantic-settings = "^2.0.3"
+sqlalchemy = "^2.0.20"
+sqlalchemy-utils = "^0.41.1"
+yarl = "^1.9.2"
+nest-asyncio = "^1.5.7"
+httpx = "^0.24.1"
+aio-pika = "^9.2.3"
+dependency-injector = "^4.41.0"
+pyjwt = "^2.8.0"
+authlib = "^1.2.1"
+cbfa = "^0.0.1"
+aiohttp = "^3.8.5"
+python-json-logger = "^2.0.7"
+pytest-asyncio = "^0.21.1"
+pytest-env = "^1.1.0"
+pytest-cov = "^4.1.0"
+fastapi-pagination = "^0.12.21"
+
+[tool.poetry.group.dev.dependencies]
+isort = "^5.12.0"
+black = "^23.7.0"
+mypy = "^1.5.1"
+coverage = "^7.3.0"
+flake8 = "^6.1.0"
+flake8-logging-format = "^0.9.0"
+flake8-alfred = "^1.1.1"
+flake8-builtins = "^2.1.0"
+flake8-coding = "^1.3.2"
+flake8-commas = "^2.1.0"
+flake8-comprehensions = "^3.14.0"
+flake8-debugger = "^4.1.2"
+flake8-multiline-containers = "^0.0.19"
+flake8-pep3101 = "^2.0.0"
+flake8-print = "^5.0.0"
+flake8-pytest-style = "^1.7.2"
+flake8-return = "^1.2.0"
+flake8-quotes = "^3.3.2"
+flake8-simplify = "^0.20.0"
+flake8-sql = "^0.4.1"
+flake8-cognitive-complexity = "^0.1.0"
+types-requests = "^2.31.0.2"
+flake8-docstrings = "^1.7.0"
+flake8-eradicate = "^1.2.0"
+flake8-annotations = "^2.8.0"
+flake8-isort = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 79
+include = '\.py$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | \.mypy_cache
+  | env
+  | migrations
+)/
+'''
+
+[tool.isort]
+line_length = 79
+py_version = 39
+skip = "migrations, .venv"
+sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
+profile = "black"
+
+[tool.flake8]
+exclude = [".git", "__pycache__", "env", "**/migrations", ".venv"]
+ignore = ["W503", "C812", "SIM106", "CCR001", "R503", "E501", "N805", "ANN101", "ANN102", "SIM119", "Q441", "ANN401", "Q443", "F405", "project/tests"]
+
+[tool.pytest.ini_options]
+env = [
+    "TESTING=True",
+    "DB_NAME=project_test",
+    "DB_HOST=postgres",
+    "DB_PORT=5432",
+    "WRITE_DB=postgresql://postgres:project@postgres/project_test",
+]

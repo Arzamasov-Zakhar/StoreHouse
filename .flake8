@@ -1,0 +1,30 @@
+[flake8]
+# Flake plugins:
+max-line-length = 80
+
+exclude =
+	.git,
+	__pycache__,
+	env,
+	migrations,
+	tests
+	cbv.py
+
+ignore = W503,C812,SIM106,CCR001,R503,E501,N805,ANN101,ANN102,SIM119,WPS305,
+    WPS306,C101,ANN201,D107,WPS229,WPS332,D100,D104,WPS237,WPS428,WPS336,WPS602,
+    WPS115,WPS348,WPS615,WPS323,Q000,ANN401
+select = B,C,E,F,W,T4,B901,A,T,R,Q0,SIM,Q,N8,I0,D,PT
+enable-extensions = G,B1
+
+warn-symbols =
+    obsolete_module = Warning! This module is obsolete!
+    module.obsolete_function = Warning! This function is obsolete!
+    module.submodule.constant = Warning! this variable will be removed!
+
+accept-encodings = utf-8,utf-16
+
+# запрещены все комментарии coding: magic, независимо от их кодировки.
+no-accept-encodings = True
+
+inline-quotes = "
+
